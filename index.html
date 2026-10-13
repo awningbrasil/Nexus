@@ -63,7 +63,7 @@
     </section>
   </main>
 
-  <div id="player" class="player" hidden>
+  <div id="player" class="player">
     <div class="player-bar">
       <strong id="player-title">Game</strong>
       <div class="row">
@@ -71,7 +71,7 @@
         <button id="player-close" class="btn">Close</button>
       </div>
     </div>
-    <iframe id="player-frame" title="Game" allow="autoplay; fullscreen" allowfullscreen></iframe>
+    <iframe id="player-frame" title="Game" allow="autoplay; fullscreen" allowfullscreen src="about:blank"></iframe>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -102,8 +102,16 @@
     }
 
     function setBalances({ agent_balance, user_balance }) {
-      if (agent_balance !== undefined) $('agent-balance').textContent = fmt(agent_balance);
-      if (user_balance !== undefined) $('user-balance').textContent = fmt(user_balance);
+      if (agent_balance !== undefined) {
+        $('agent-balance').textContent = fmt(agent_balance);
+        $('agent-balance').classList.add('balance-change');
+        setTimeout(() => $('agent-balance').classList.remove('balance-change'), 900);
+      }
+      if (user_balance !== undefined) {
+        $('user-balance').textContent = fmt(user_balance);
+        $('user-balance').classList.add('balance-change');
+        setTimeout(() => $('user-balance').classList.remove('balance-change'), 900);
+      }
     }
 
     async function loadBalance() {
@@ -184,8 +192,10 @@
         if (!/^https?:$/.test(url.protocol)) throw new Error('unexpected launch URL'); // never load javascript: etc. into the page
         $('player-title').textContent = title;
         $('player-open').href = url.href;
-        $('player-frame').src = url.href;
-        $('player').hidden = false;
+        // show iframe and set src (use same-origin demo play page when available)
+        const frame = $('player-frame');
+        frame.src = url.href;
+        $('player').classList.add('show');
       } catch (err) {
         toast(err.message);
       }
@@ -211,8 +221,9 @@
     $('deposit').onclick = () => transfer('deposit');
     $('withdraw').onclick = () => transfer('withdraw');
     $('player-close').onclick = () => {
-      $('player').hidden = true;
-      $('player-frame').src = 'about:blank';
+      const frame = $('player-frame');
+      $('player').classList.remove('show');
+      frame.src = 'about:blank';
       loadBalance().catch(() => {}); // the balance moved while the player was in the game
     };
 

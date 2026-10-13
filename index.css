@@ -34,9 +34,28 @@ input[type=text],input[type=number],input{width:100%;padding:10px;border-radius:
 .card h3{margin:0;font-size:16px}
 .card small{color:var(--muted)}
 .card-off{opacity:0.5}
-.player{position:fixed;inset:40px;background:#071022;border-radius:12px;padding:12px;display:flex;flex-direction:column}
+
+/* Player overlay — hidden by default and shown via .show class. This prevents accidental full-screen blue overlay. */
+.player{
+  display:none;
+  position:fixed;
+  inset:40px;
+  z-index:9999;
+  background:rgba(7,16,34,0.98);
+  border-radius:12px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 20px 60px rgba(2,6,23,0.6);
+  transition:opacity .18s ease,transform .18s ease;
+}
+.player.show{
+  display:flex;
+  opacity:1;
+  transform:translateY(0);
+}
 .player-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.player iframe{flex:1;border:0;border-radius:8px;width:100%}
+.player iframe{flex:1;border:0;border-radius:8px;width:100%;background:transparent}
 .toast{position:fixed;right:18px;bottom:18px;padding:12px 16px;border-radius:10px;background:rgba(0,0,0,0.6);color:#fff}
 .toast-error{background:linear-gradient(90deg,var(--danger),#b02a2a)}
 .balance-change{animation:balancePulse .9s ease}

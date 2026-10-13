@@ -1,0 +1,4 @@
+RewriteEngine On
+
+# Local PHP server route: /gold_api -> gold_api.php
+RewriteRule ^gold_api$ gold_api.php [L,QSA]

@@ -4,14 +4,12 @@
  *
  * Usage:
  *   php -S 127.0.0.1:8080 -t . router.php
- *   Then set environment variables when running clients / server:
- *     FVS_API_URL=http://127.0.0.1:8080/mock_api.php
- *     FVS_AGENT_CODE=demo_agent
- *     FVS_AGENT_TOKEN=demo_token
- *     FVS_AGENT_SECRET=demo_secret
  *
- * This mock implements the API contract used by the example clients in this repo:
- *   provider_list, game_list, user_create, user_deposit, user_withdraw, game_launch, money_info, transfer_status
+ * Set environment variables (optional):
+ *   FVS_AGENT_CODE, FVS_AGENT_TOKEN
+ *
+ * This mock implements the API contract used by the example clients in this repo and returns
+ * local SVG banners and a local play page when running on localhost so the demo is fully self-contained.
  */
 
 declare(strict_types=1);
@@ -21,7 +19,7 @@ header('Content-Type: application/json; charset=utf-8');
 $raw = file_get_contents('php://input') ?: '';
 $body = json_decode($raw, true) ?: [];
 
-// Basic auth check: every call must carry agent_code + agent_token
+// Basic auth check: every call must carry agent_code + agent_token (for the mock we accept defaults)
 $agentCode = $body['agent_code'] ?? getenv('FVS_AGENT_CODE') ?: 'demo_agent';
 $agentToken = $body['agent_token'] ?? getenv('FVS_AGENT_TOKEN') ?: 'demo_token';
 
@@ -49,9 +47,9 @@ try {
     switch ($method) {
         case 'provider_list':
             $providers = [
-                ['code' => 'PRAGMATIC', 'name' => 'Pragmatic Play', 'status' => 1],
-                ['code' => 'PGSOFT', 'name' => 'PG Soft', 'status' => 1],
-                ['code' => 'EVOLUTION', 'name' => 'Evolution', 'status' => 1],
+                ['code' => 'PRAGMATIC', 'name' => 'Pragmatic Play', 'status' => 1, 'banner' => '/assets/pragmatic.svg'],
+                ['code' => 'PGSOFT', 'name' => 'PG Soft', 'status' => 1, 'banner' => '/assets/pgsoft.svg'],
+                ['code' => 'EVOLUTION', 'name' => 'Evolution', 'status' => 1, 'banner' => '/assets/evolution.svg'],
             ];
             echo json_encode(['status' => 1, 'msg' => 'SUCCESS', 'providers' => $providers]);
             break;
@@ -61,19 +59,19 @@ try {
             $games = [];
             if ($provider === 'PRAGMATIC') {
                 $games = [
-                    ['game_code' => 'sweet_bonanza', 'game_name' => 'Sweet Bonanza', 'banner' => '', 'status' => 1],
-                    ['game_code' => 'gates_of_olympus', 'game_name' => 'Gates of Olympus', 'banner' => '', 'status' => 1],
-                    ['game_code' => 'dog_house', 'game_name' => 'The Dog House', 'banner' => '', 'status' => 1],
+                    ['game_code' => 'sweet_bonanza', 'game_name' => 'Sweet Bonanza', 'banner' => '/assets/sweet_bonanza.svg', 'status' => 1],
+                    ['game_code' => 'gates_of_olympus', 'game_name' => 'Gates of Olympus', 'banner' => '/assets/gates_of_olympus.svg', 'status' => 1],
+                    ['game_code' => 'dog_house', 'game_name' => 'The Dog House', 'banner' => '/assets/dog_house.svg', 'status' => 1],
                 ];
             } elseif ($provider === 'PGSOFT') {
                 $games = [
-                    ['game_code' => 'mahjong_ways', 'game_name' => 'Mahjong Ways', 'banner' => '', 'status' => 1],
-                    ['game_code' => 'wizard_gem', 'game_name' => 'Wizard of Gems', 'banner' => '', 'status' => 1],
+                    ['game_code' => 'mahjong_ways', 'game_name' => 'Mahjong Ways', 'banner' => '/assets/pgsoft.svg', 'status' => 1],
+                    ['game_code' => 'wizard_gem', 'game_name' => 'Wizard of Gems', 'banner' => '/assets/pgsoft.svg', 'status' => 1],
                 ];
             } elseif ($provider === 'EVOLUTION') {
                 $games = [
-                    ['game_code' => 'blackjack_live', 'game_name' => 'Blackjack Live', 'banner' => '', 'status' => 1],
-                    ['game_code' => 'roulette_live', 'game_name' => 'Roulette Live', 'banner' => '', 'status' => 1],
+                    ['game_code' => 'blackjack_live', 'game_name' => 'Blackjack Live', 'banner' => '/assets/evolution.svg', 'status' => 1],
+                    ['game_code' => 'roulette_live', 'game_name' => 'Roulette Live', 'banner' => '/assets/evolution.svg', 'status' => 1],
                 ];
             }
             echo json_encode(['status' => 1, 'msg' => 'SUCCESS', 'games' => $games]);
@@ -143,8 +141,8 @@ try {
             $lang = (string) ($body['lang'] ?? 'en');
             $lobbyUrl = (string) ($body['lobby_url'] ?? $body['return_url'] ?? '');
 
-            $launchUrl = "https://demo.game.local/play?user=" . rawurlencode($user) . "&provider=" . rawurlencode($provider) . "&game=" . rawurlencode($game) . "&lang=" . rawurlencode($lang);
-            if ($lobbyUrl !== '') $launchUrl .= "&return=" . rawurlencode($lobbyUrl);
+            // For a local demo return a relative play page so the iframe loads same-origin content
+            $launchUrl = "/play.html?user=" . rawurlencode($user) . "&provider=" . rawurlencode($provider) . "&game=" . rawurlencode($game) . "&lang=" . rawurlencode($lang);
 
             echo json_encode(['status' => 1, 'msg' => 'SUCCESS', 'launch_url' => $launchUrl, 'fc_code' => 'FC_DEMO']);
             break;

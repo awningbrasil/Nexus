@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Demo Game — NexusGGR</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#081022,#071622);color:#e6edf3;margin:0;display:flex;flex-direction:column;min-height:100vh}
+    .game{max-width:980px;margin:24px auto;padding:18px;background:rgba(255,255,255,0.03);border-radius:12px}
+    .header{display:flex;justify-content:space-between;align-items:center}
+    .balance{font-size:20px}
+    .controls{display:flex;gap:8px;margin-top:12px}
+    button{padding:10px 14px;border-radius:8px;border:none;background:#238636;color:white;cursor:pointer}
+    .reel{height:220px;background:#041424;border-radius:12px;margin-top:14px;display:flex;align-items:center;justify-content:center;font-size:28px}
+    .coin{width:40px;height:40px;border-radius:50%;background:gold;margin:6px}
+  </style>
+</head>
+<body>
+  <div class="game">
+    <div class="header">
+      <div>
+        <div id="game-title">Game</div>
+        <div class="balance">Player: <strong id="balance">0</strong></div>
+      </div>
+      <div>
+        <div id="info"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <input id="bet" type="number" value="10" min="1" style="padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit">
+      <button id="btn-bet">Bet</button>
+      <button id="btn-win">Simulate Win</button>
+      <button id="btn-refresh">Refresh Balance</button>
+    </div>
+
+    <div class="reel" id="reel">🎰 Demo Slot 🎰</div>
+    <div id="log" style="margin-top:12px;color:#9aa4b2"></div>
+  </div>
+
+  <script>
+    // parse query params
+    const qs = Object.fromEntries(new URLSearchParams(location.search));
+    const user = qs.user || 'demo_user';
+    const provider = qs.provider || 'PRAGMATIC';
+    const game = qs.game || '';
+    document.getElementById('game-title').textContent = `${provider} ${game || 'lobby'}`;
+
+    const info = (msg) => { document.getElementById('info').textContent = msg; };
+    const log = (t) => { document.getElementById('log').textContent = t + '\n' + document.getElementById('log').textContent; };
+
+    async function postJson(url, body) {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      return res.json();
+    }
+
+    async function refresh() {
+      const res = await postJson('/mock_api.php', { method: 'money_info', agent_code: 'demo_agent', agent_token: 'demo_token', user_code: user });
+      if (res.status !== 1) return; document.getElementById('balance').textContent = Number(res.user?.balance || 0).toFixed(2);
+    }
+
+    // Calls the site's gold_api endpoint to place a transaction (seamless flow)
+    async function transaction(debit, credit) {
+      const txnIdV2 = 'txn_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+      const body = {
+        method: 'transaction', agent_code: 'demo_agent', agent_secret: 'demo_secret', user_code: user, user_token: 'demo', game_type: 'slot',
+        slot: { provider_code: provider, game_code: game, txn_type: debit>0 && credit>0 ? 'debit_credit' : (debit>0?'debit':'credit'), bet_money: debit, win_money: credit, round_id: 'r1', txn_id: txnIdV2, txn_id_v2: txnIdV2 }
+      };
+      const res = await postJson('/gold_api', body);
+      return res;
+    }
+
+    document.getElementById('btn-bet').onclick = async () => {
+      const amt = Number(document.getElementById('bet').value) || 0;
+      if (amt <= 0) return alert('enter amount');
+      info('Betting...');
+      const res = await transaction(amt, 0);
+      if (res.status === 1) { info('Bet accepted'); refresh(); animateBet(); log('Bet ' + amt + ' accepted'); }
+      else info('Bet failed: ' + (res.msg||'error'));
+    };
+
+    document.getElementById('btn-win').onclick = async () => {
+      const amt = Number(document.getElementById('bet').value) || 0;
+      const win = Math.round(amt * (1 + Math.random()*5));
+      info('Applying win...');
+      const res = await transaction(0, win);
+      if (res.status === 1) { info('Win applied: ' + win); refresh(); animateWin(); log('Win ' + win + ' applied'); }
+      else info('Win failed: ' + (res.msg||'error'));
+    };
+
+    document.getElementById('btn-refresh').onclick = refresh;
+
+    function animateBet(){ const reel=document.getElementById('reel'); reel.style.transform='translateY(-6px)'; setTimeout(()=>reel.style.transform='none',400); }
+    function animateWin(){ const reel=document.getElementById('reel'); reel.style.boxShadow='0 10px 40px rgba(46,160,67,0.25)'; setTimeout(()=>reel.style.boxShadow='none',700); }
+
+    // initial
+    refresh();
+  </script>
+</body>
+</html>
